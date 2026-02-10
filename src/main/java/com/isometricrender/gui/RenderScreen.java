@@ -51,22 +51,22 @@ public class RenderScreen extends GuiScreen {
                 1.0, 10.0, scale, true, true, slider -> {
                     scale = (float) slider.getValue();
                     scheduleRender();
-                });
+                }));
             
             this.buttonList.add(new GuiSlider(1, rightPanel, 70, 150, 20, "Rotation: ", "°", 
                 0.0, 360.0, rotation, true, true, slider -> {
                     rotation = (float) slider.getValue();
                     scheduleRender();
-                });
+                }));
             
             this.buttonList.add(new GuiSlider(2, rightPanel, 100, 150, 20, "Resolution: ", "px", 
                 256.0, 2048.0, resolution, true, true, slider -> {
                     resolution = (int) slider.getValue();
                     scheduleRender();
-                });
+                }));
             
-            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG");
-            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close");
+            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"););
+            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"););
             
             previewSize = Math.min(this.width - 200, this.height - 40);
             previewX = 20;
@@ -127,7 +127,7 @@ public class RenderScreen extends GuiScreen {
             }
             
             LOGGER.info("Render successful, image size: {}x{}", 
-                       renderedImage.getWidth(), renderedImage.getHeight();
+                       renderedImage.getWidth(), renderedImage.getHeight());
             
             uploadTexture();
             
