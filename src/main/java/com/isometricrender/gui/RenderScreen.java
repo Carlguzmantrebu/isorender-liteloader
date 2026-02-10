@@ -9,9 +9,11 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL12;
 
 import java.awt.image.BufferedImage;
+import java.nio.IntBuffer;
 import java.awt.image.DataBufferInt;
 import java.io.IOException;
 
@@ -122,7 +124,9 @@ public class RenderScreen extends GuiScreen {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         
         int[] pixels = ((DataBufferInt) renderedImage.getRaster().getDataBuffer()).getData();
-        java.nio.IntBuffer buffer = java.nio.IntBuffer.wrap(pixels);
+        IntBuffer buffer = BufferUtils.createIntBuffer(pixels.length);
+        buffer.put(pixels);
+        buffer.flip();
         
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, 
             renderedImage.getWidth(), renderedImage.getHeight(), 
