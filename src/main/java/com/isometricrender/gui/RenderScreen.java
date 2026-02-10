@@ -34,55 +34,48 @@ public class RenderScreen extends GuiScreen {
     
     public RenderScreen(AreaSelection selection) {
         this.selection = selection;
-        System.out.println("RenderScreen constructor called with selection: " + selection);
+        System.out.println("[IsometricRender] Constructor called");
     }
     
     @Override
     public void initGui() {
-        System.out.println("RenderScreen.initGui() called");
-        try {
-            this.buttonList.clear();
-            
-            int rightPanel = this.width - 160;
-            
-            this.buttonList.add(new GuiSlider(0, rightPanel, 40, 150, 20, "Scale: ", "", 
-                1.0, 10.0, scale, true, true, slider -> {
-                    scale = (float) slider.getValue();
-                    scheduleRender();
-                }));
-            
-            this.buttonList.add(new GuiSlider(1, rightPanel, 70, 150, 20, "Rotation: ", "°", 
-                0.0, 360.0, rotation, true, true, slider -> {
-                    rotation = (float) slider.getValue();
-                    scheduleRender();
-                }));
-            
-            this.buttonList.add(new GuiSlider(2, rightPanel, 100, 150, 20, "Resolution: ", "px", 
-                256.0, 2048.0, resolution, true, true, slider -> {
-                    resolution = (int) slider.getValue();
-                    scheduleRender();
-                }));
-            
-            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"));
-            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"));
-            
-            previewSize = Math.min(this.width - 200, this.height - 40);
-            previewX = 20;
-            previewY = 20;
-            
-            renderer = new WorldRenderer(this.mc.world);
-            scheduleRender();
-            System.out.println("RenderScreen.initGui() completed, buttons: " + this.buttonList.size());
-        } catch (Exception e) {
-            System.out.println("RenderScreen.initGui() error: " + e.getMessage());
-            e.printStackTrace();
-            this.mc.displayGuiScreen(null);
-        }
+        System.out.println("[IsometricRender] initGui() called, width=" + this.width + ", height=" + this.height);
+        
+        this.buttonList.clear();
+        
+        int rightPanel = this.width - 160;
+        
+        this.buttonList.add(new GuiSlider(0, rightPanel, 40, 150, 20, "Scale: ", "", 
+            1.0, 10.0, scale, true, true, slider -> {
+                scale = (float) slider.getValue();
+                scheduleRender();
+            }));
+        
+        this.buttonList.add(new GuiSlider(1, rightPanel, 70, 150, 20, "Rotation: ", "°", 
+            0.0, 360.0, rotation, true, true, slider -> {
+                rotation = (float) slider.getValue();
+                scheduleRender();
+            }));
+        
+        this.buttonList.add(new GuiSlider(2, rightPanel, 100, 150, 20, "Resolution: ", "px", 
+            256.0, 2048.0, resolution, true, true, slider -> {
+                resolution = (int) slider.getValue();
+                scheduleRender();
+            }));
+        
+        this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"));
+        this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"));
+        
+        previewSize = Math.min(this.width - 200, this.height - 40);
+        previewX = 20;
+        previewY = 20;
+        
+        System.out.println("[IsometricRender] initGui() completed, buttons=" + this.buttonList.size());
     }
     
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
-        System.out.println("Button pressed: " + button.id);
+        System.out.println("[IsometricRender] Button pressed: " + button.id);
         if (button.id == 3 && renderedImage != null) {
             renderer.exportImage(renderedImage);
         } else if (button.id == 4) {
@@ -97,13 +90,18 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public void updateScreen() {
-        super.updateScreen();
-        System.out.println("RenderScreen.updateScreen() called, renderPending: " + renderPending);
+        System.out.println("[IsometricRender] updateScreen() renderPending=" + renderPending);
         
         if (renderPending) {
             long now = System.currentTimeMillis();
             if (now - lastRenderTime >= RENDER_DELAY_MS) {
-                System.out.println("Starting render in updateScreen()");
+                // Crear renderer lazily
+                if (renderer == null) {
+                    System.out.println("[IsometricRender] Creating WorldRenderer");
+                    renderer = new WorldRenderer(this.mc.world);
+                }
+                
+                System.out.println("[IsometricRender] Calling updateRender()");
                 updateRender();
                 renderPending = false;
                 lastRenderTime = now;
@@ -112,33 +110,29 @@ public class RenderScreen extends GuiScreen {
     }
     
     private void updateRender() {
-        System.out.println("RenderScreen.updateRender() called");
-        if (renderer == null) {
-            return;
-        }
+        System.out.println("[IsometricRender] updateRender() called");
         
         try {
-            System.out.println("Calling renderer.render()...");
             renderedImage = renderer.render(selection, scale, rotation, resolution);
             
             if (renderedImage == null) {
+                System.out.println("[IsometricRender] ERROR: render returned null!");
                 return;
             }
             
-            System.out.println("Render successful, uploading texture...");
+            System.out.println("[IsometricRender] Render success, uploading texture...");
             uploadTexture();
             
         } catch (Exception e) {
-            System.out.println("Render error: " + e.getMessage());
+            System.out.println("[IsometricRender] ERROR in updateRender: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     private void uploadTexture() {
-        System.out.println("RenderScreen.uploadTexture() called");
-        if (renderedImage == null) {
-            return;
-        }
+        System.out.println("[IsometricRender] uploadTexture() called");
+        
+        if (renderedImage == null) return;
         
         if (glTextureId == -1) {
             glTextureId = GL11.glGenTextures();
@@ -157,20 +151,24 @@ public class RenderScreen extends GuiScreen {
             renderedImage.getWidth(), renderedImage.getHeight(), 
             0, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
         
+        System.out.println("[IsometricRender] Texture uploaded successfully!");
     }
     
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        System.out.println("[IsometricRender] drawScreen() called");
         
         this.drawDefaultBackground();
         
-        // Draw basic UI elements
-        this.drawRect(previewX - 1, previewY - 1, previewX + previewSize + 1, previewY + previewSize + 1, 0xFFAAAAAA);
+        // Draw preview area border
+        this.drawRect(previewX - 1, previewY - 1, previewX + previewSize + 1, previewY + previewSize + 1, 0xFF555555);
+        this.drawRect(previewX, previewY, previewX + previewSize, previewY + previewSize, 0xFF000000);
         
         if (glTextureId != -1) {
             drawTexture(glTextureId, previewX, previewY, previewSize, previewSize);
+            System.out.println("[IsometricRender] Drew texture");
         } else {
-            this.drawString(this.fontRenderer, "Rendering...", previewX + 20, previewY + 20, 0xFFFFFF);
+            this.drawCenteredString(this.fontRenderer, "Rendering...", previewX + previewSize/2, previewY + previewSize/2, 0xFFFFFF);
         }
         
         super.drawScreen(mouseX, mouseY, partialTicks);
@@ -214,7 +212,7 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public void onGuiClosed() {
-        System.out.println("RenderScreen.onGuiClosed() called");
+        System.out.println("[IsometricRender] onGuiClosed() called");
         cleanup();
     }
     
