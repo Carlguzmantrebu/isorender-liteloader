@@ -1,0 +1,10 @@
+{
+  "name": "isometricrender",
+  "displayName": "Isometric Render",
+  "version": "1.0.0",
+  "mcversion": "1.12.2",
+  "revision": "1",
+  "author": "IsometricRender",
+  "description": "Render isometric views of world areas",
+  "class": "com.isometricrender.LiteModIsometricRender"
+}
