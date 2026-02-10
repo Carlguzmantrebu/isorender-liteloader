@@ -14,10 +14,13 @@ import org.lwjgl.opengl.GL12;
 
 import java.awt.image.BufferedImage;
 import java.nio.IntBuffer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.awt.image.DataBufferInt;
 import java.io.IOException;
 
 public class RenderScreen extends GuiScreen {
+    private static final Logger LOGGER = LogManager.getLogger("IsometricRender");
     private final AreaSelection selection;
     private WorldRenderer renderer;
     private BufferedImage renderedImage;
@@ -48,22 +51,22 @@ public class RenderScreen extends GuiScreen {
                 1.0, 10.0, scale, true, true, slider -> {
                     scale = (float) slider.getValue();
                     scheduleRender();
-                }));
+                });
             
             this.buttonList.add(new GuiSlider(1, rightPanel, 70, 150, 20, "Rotation: ", "°", 
                 0.0, 360.0, rotation, true, true, slider -> {
                     rotation = (float) slider.getValue();
                     scheduleRender();
-                }));
+                });
             
             this.buttonList.add(new GuiSlider(2, rightPanel, 100, 150, 20, "Resolution: ", "px", 
                 256.0, 2048.0, resolution, true, true, slider -> {
                     resolution = (int) slider.getValue();
                     scheduleRender();
-                }));
+                });
             
-            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"));
-            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"));
+            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG");
+            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close");
             
             previewSize = Math.min(this.width - 200, this.height - 40);
             previewX = 20;
@@ -107,10 +110,30 @@ public class RenderScreen extends GuiScreen {
     }
     
     private void updateRender() {
-        if (renderer == null) return;
+        if (renderer == null) {
+            LOGGER.warn("Renderer is null, cannot render");
+            return;
+        }
         
-        renderedImage = renderer.render(selection, scale, rotation, resolution);
-        uploadTexture();
+        try {
+            LOGGER.info("Starting render: selection={}, scale={}, rotation={}, resolution={}", 
+                       selection, scale, rotation, resolution);
+            
+            renderedImage = renderer.render(selection, scale, rotation, resolution);
+            
+            if (renderedImage == null) {
+                LOGGER.error("Render returned null image");
+                return;
+            }
+            
+            LOGGER.info("Render successful, image size: {}x{}", 
+                       renderedImage.getWidth(), renderedImage.getHeight();
+            
+            uploadTexture();
+            
+        } catch (Exception e) {
+            LOGGER.error("Failed to render image", e);
+        }
     }
     
     private void uploadTexture() {
@@ -144,13 +167,21 @@ public class RenderScreen extends GuiScreen {
         
         this.drawDefaultBackground();
         
+        // Dibujar área de preview
+        this.drawRect(previewX - 1, previewY - 1, previewX + previewSize + 1, previewY + previewSize + 1, 0xFFAAAAAA);
+        
         if (glTextureId != -1) {
             drawTexture(glTextureId, previewX, previewY, previewSize, previewSize);
+        } else {
+            // Si no hay textura, mostrar placeholder
+            drawString(this.fontRenderer, "Rendering...", previewX + 20, previewY + 20, 0xFFFFFF);
         }
         
         super.drawScreen(mouseX, mouseY, partialTicks);
         
         drawString(this.fontRenderer, "Isometric Render", this.width - 160, 20, 0xFFFFFF);
+        drawString(this.fontRenderer, "Renderer: " + (renderer != null ? "OK" : "NULL"), this.width - 160, 35, 0xFFFFFF);
+        drawString(this.fontRenderer, "Image: " + (renderedImage != null ? renderedImage.getWidth() + "x" + renderedImage.getHeight() : "NULL"), this.width - 160, 50, 0xFFFFFF);
     }
     
     private void drawTexture(int texId, int x, int y, int width, int height) {
