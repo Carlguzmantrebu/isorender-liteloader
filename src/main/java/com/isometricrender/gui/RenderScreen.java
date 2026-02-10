@@ -65,8 +65,8 @@ public class RenderScreen extends GuiScreen {
                     scheduleRender();
                 }));
             
-            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"););
-            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"););
+            this.buttonList.add(new GuiButton(3, rightPanel, 130, 150, 20, "Export PNG"));
+            this.buttonList.add(new GuiButton(4, rightPanel, 160, 150, 20, "Close"));
             
             previewSize = Math.min(this.width - 200, this.height - 40);
             previewX = 20;
