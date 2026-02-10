@@ -70,7 +70,8 @@ public class RenderScreen extends GuiScreen {
             previewY = 20;
             
             renderer = new WorldRenderer(this.mc.world);
-            updateRender();
+            // No hacer updateRender() aquí - deferir hasta drawScreen()
+            scheduleRender();
         } catch (Exception e) {
             e.printStackTrace();
             this.mc.displayGuiScreen(null);
@@ -135,6 +136,12 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        // Renderizar si hay pendientes o si no hay imagen
+        if (renderPending || renderedImage == null) {
+            updateRender();
+            renderPending = false;
+        }
+        
         this.drawDefaultBackground();
         
         if (glTextureId != -1) {
