@@ -8,19 +8,15 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
-
 import java.awt.image.BufferedImage;
-import java.nio.IntBuffer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.awt.image.DataBufferInt;
 import java.io.IOException;
+import java.nio.IntBuffer;
 
 public class RenderScreen extends GuiScreen {
-    private static final Logger LOGGER = LogManager.getLogger("IsometricRender");
     private final AreaSelection selection;
     private WorldRenderer renderer;
     private BufferedImage renderedImage;
@@ -38,10 +34,12 @@ public class RenderScreen extends GuiScreen {
     
     public RenderScreen(AreaSelection selection) {
         this.selection = selection;
+        System.out.println("RenderScreen constructor called with selection: " + selection);
     }
     
     @Override
     public void initGui() {
+        System.out.println("RenderScreen.initGui() called");
         try {
             this.buttonList.clear();
             
@@ -73,9 +71,10 @@ public class RenderScreen extends GuiScreen {
             previewY = 20;
             
             renderer = new WorldRenderer(this.mc.world);
-            // No hacer updateRender() aquí - deferir hasta drawScreen()
             scheduleRender();
+            System.out.println("RenderScreen.initGui() completed, buttons: " + this.buttonList.size());
         } catch (Exception e) {
+            System.out.println("RenderScreen.initGui() error: " + e.getMessage());
             e.printStackTrace();
             this.mc.displayGuiScreen(null);
         }
@@ -83,6 +82,7 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
+        System.out.println("Button pressed: " + button.id);
         if (button.id == 3 && renderedImage != null) {
             renderer.exportImage(renderedImage);
         } else if (button.id == 4) {
@@ -98,10 +98,12 @@ public class RenderScreen extends GuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
+        System.out.println("RenderScreen.updateScreen() called, renderPending: " + renderPending);
         
         if (renderPending) {
             long now = System.currentTimeMillis();
             if (now - lastRenderTime >= RENDER_DELAY_MS) {
+                System.out.println("Starting render in updateScreen()");
                 updateRender();
                 renderPending = false;
                 lastRenderTime = now;
@@ -110,34 +112,33 @@ public class RenderScreen extends GuiScreen {
     }
     
     private void updateRender() {
+        System.out.println("RenderScreen.updateRender() called");
         if (renderer == null) {
-            LOGGER.warn("Renderer is null, cannot render");
             return;
         }
         
         try {
-            LOGGER.info("Starting render: selection={}, scale={}, rotation={}, resolution={}", 
-                       selection, scale, rotation, resolution);
-            
+            System.out.println("Calling renderer.render()...");
             renderedImage = renderer.render(selection, scale, rotation, resolution);
             
             if (renderedImage == null) {
-                LOGGER.error("Render returned null image");
                 return;
             }
             
-            LOGGER.info("Render successful, image size: {}x{}", 
-                       renderedImage.getWidth(), renderedImage.getHeight());
-            
+            System.out.println("Render successful, uploading texture...");
             uploadTexture();
             
         } catch (Exception e) {
-            LOGGER.error("Failed to render image", e);
+            System.out.println("Render error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
     private void uploadTexture() {
-        if (renderedImage == null) return;
+        System.out.println("RenderScreen.uploadTexture() called");
+        if (renderedImage == null) {
+            return;
+        }
         
         if (glTextureId == -1) {
             glTextureId = GL11.glGenTextures();
@@ -155,33 +156,26 @@ public class RenderScreen extends GuiScreen {
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, 
             renderedImage.getWidth(), renderedImage.getHeight(), 
             0, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
+        
     }
     
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        // Renderizar si hay pendientes o si no hay imagen
-        if (renderPending || renderedImage == null) {
-            updateRender();
-            renderPending = false;
-        }
         
         this.drawDefaultBackground();
         
-        // Dibujar área de preview
+        // Draw basic UI elements
         this.drawRect(previewX - 1, previewY - 1, previewX + previewSize + 1, previewY + previewSize + 1, 0xFFAAAAAA);
         
         if (glTextureId != -1) {
             drawTexture(glTextureId, previewX, previewY, previewSize, previewSize);
         } else {
-            // Si no hay textura, mostrar placeholder
-            drawString(this.fontRenderer, "Rendering...", previewX + 20, previewY + 20, 0xFFFFFF);
+            this.drawString(this.fontRenderer, "Rendering...", previewX + 20, previewY + 20, 0xFFFFFF);
         }
         
         super.drawScreen(mouseX, mouseY, partialTicks);
         
-        drawString(this.fontRenderer, "Isometric Render", this.width - 160, 20, 0xFFFFFF);
-        drawString(this.fontRenderer, "Renderer: " + (renderer != null ? "OK" : "NULL"), this.width - 160, 35, 0xFFFFFF);
-        drawString(this.fontRenderer, "Image: " + (renderedImage != null ? renderedImage.getWidth() + "x" + renderedImage.getHeight() : "NULL"), this.width - 160, 50, 0xFFFFFF);
+        this.drawString(this.fontRenderer, "Isometric Render", this.width - 160, 20, 0xFFFFFF);
     }
     
     private void drawTexture(int texId, int x, int y, int width, int height) {
@@ -220,6 +214,7 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public void onGuiClosed() {
+        System.out.println("RenderScreen.onGuiClosed() called");
         cleanup();
     }
     
