@@ -18,6 +18,10 @@ public class LiteModIsometricRender implements LiteMod, OutboundChatFilter, Tick
     public static final Logger LOGGER = LogManager.getLogger("IsometricRender");
     private boolean tabPressed = false;
     
+    // Variables para delay de apertura de GUI
+    private AreaSelection pendingSelection = null;
+    private int openGuiDelayTicks = 0;
+    
     @Override
     public String getName() {
         return "IsometricRender";
@@ -41,6 +45,7 @@ public class LiteModIsometricRender implements LiteMod, OutboundChatFilter, Tick
     
     @Override
     public void onTick(Minecraft minecraft, float partialTicks, boolean inGame, boolean clock) {
+        // Manejar TAB completion
         if (minecraft.currentScreen instanceof GuiChat) {
             boolean tabDown = Keyboard.isKeyDown(Keyboard.KEY_TAB);
             
@@ -52,6 +57,41 @@ public class LiteModIsometricRender implements LiteMod, OutboundChatFilter, Tick
             }
         } else {
             tabPressed = false;
+        }
+        
+        // Manejar apertura delayada de GUI
+        if (openGuiDelayTicks > 0 && pendingSelection != null) {
+            openGuiDelayTicks--;
+            System.out.println("[IsometricRender] Delay tick: " + openGuiDelayTicks);
+            
+            if (openGuiDelayTicks == 0) {
+                System.out.println("[IsometricRender] Delay complete, opening GUI now");
+                openGuiNow(minecraft, pendingSelection);
+                pendingSelection = null;
+            }
+        }
+    }
+    
+    private void openGuiNow(Minecraft mc, AreaSelection selection) {
+        try {
+            System.out.println("[IsometricRender] === OPENING GUI NOW ===");
+            System.out.println("[IsometricRender] mc.currentScreen BEFORE: " + mc.currentScreen);
+            
+            LOGGER.info("Displaying RenderScreen...");
+            RenderScreen screen = new RenderScreen(selection);
+            System.out.println("[IsometricRender] RenderScreen created: " + screen);
+            
+            mc.displayGuiScreen(screen);
+            
+            System.out.println("[IsometricRender] mc.currentScreen AFTER: " + mc.currentScreen);
+            System.out.println("[IsometricRender] Screen match: " + (mc.currentScreen == screen));
+            LOGGER.info("RenderScreen displayed successfully");
+            System.out.println("[IsometricRender] === GUI OPENED ===");
+        } catch (Exception e) {
+            System.out.println("[IsometricRender] EXCEPTION opening GUI: " + e.getMessage());
+            LOGGER.error("Failed to open RenderScreen", e);
+            mc.player.sendMessage(new TextComponentString("§cFailed to open GUI: " + e.getMessage()));
+            e.printStackTrace();
         }
     }
     
@@ -113,41 +153,16 @@ public class LiteModIsometricRender implements LiteMod, OutboundChatFilter, Tick
                 
                 LOGGER.info("Opening GUI with selection: " + pos1 + " to " + pos2);
                 
-                System.out.println("[IsometricRender] About to schedule GUI opening task");
-                System.out.println("[IsometricRender] Current thread: " + Thread.currentThread().getName());
-                System.out.println("[IsometricRender] mc.currentScreen BEFORE: " + mc.currentScreen);
+                // ENFOQUE DIFERENTE: Usar delay de 1 tick en lugar de scheduled task
+                // Esto permite que GuiChat se cierre completamente primero
+                System.out.println("[IsometricRender] Setting up 1-tick delay for GUI opening");
+                System.out.println("[IsometricRender] Current screen: " + mc.currentScreen);
+                System.out.println("[IsometricRender] GuiChat closing, will open RenderScreen in 1 tick");
                 
-                mc.addScheduledTask(() -> {
-                    try {
-                        System.out.println("[IsometricRender] === SCHEDULED TASK START ===");
-                        System.out.println("[IsometricRender] Running on thread: " + Thread.currentThread().getName());
-                        System.out.println("[IsometricRender] mc.currentScreen in scheduled task BEFORE: " + mc.currentScreen);
-                        
-                        LOGGER.info("Displaying RenderScreen...");
-                        System.out.println("[IsometricRender] Creating RenderScreen instance...");
-                        
-                        RenderScreen screen = new RenderScreen(selection);
-                        System.out.println("[IsometricRender] RenderScreen created: " + screen);
-                        
-                        System.out.println("[IsometricRender] Calling mc.displayGuiScreen(screen)...");
-                        mc.displayGuiScreen(screen);
-                        
-                        System.out.println("[IsometricRender] mc.displayGuiScreen() returned");
-                        System.out.println("[IsometricRender] mc.currentScreen AFTER: " + mc.currentScreen);
-                        System.out.println("[IsometricRender] Expected screen: " + screen);
-                        System.out.println("[IsometricRender] Screen match: " + (mc.currentScreen == screen));
-                        
-                        LOGGER.info("RenderScreen displayed successfully");
-                        System.out.println("[IsometricRender] === SCHEDULED TASK END ===");
-                    } catch (Exception e) {
-                        System.out.println("[IsometricRender] EXCEPTION in scheduled task: " + e.getMessage());
-                        LOGGER.error("Failed to open RenderScreen", e);
-                        mc.player.sendMessage(new TextComponentString("§cFailed to open GUI: " + e.getMessage()));
-                        e.printStackTrace();
-                    }
-                });
+                pendingSelection = selection;
+                openGuiDelayTicks = 1; // 1 tick = ~50ms, suficiente para que GuiChat se cierre
                 
-                System.out.println("[IsometricRender] Scheduled task added");
+                System.out.println("[IsometricRender] GUI opening scheduled with 1-tick delay");
             } else {
                 System.out.println("[IsometricRender] Unknown subcommand: " + parts[1]);
                 mc.player.sendMessage(new TextComponentString("§cUnknown subcommand: " + parts[1]));
