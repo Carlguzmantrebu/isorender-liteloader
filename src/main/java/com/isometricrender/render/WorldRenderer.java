@@ -112,7 +112,7 @@ public class WorldRenderer {
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
         
-        GL11.glRotatef(35.264f, 1, 0, 0);
+        GL11.glRotatef(slant, 1, 0, 0);
         GL11.glRotatef(rotation, 0, 1, 0);
         
         float cx = (selection.getMinX() + selection.getMaxX()) * 0.5f;
