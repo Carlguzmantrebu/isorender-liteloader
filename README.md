@@ -20,15 +20,3 @@ The output JAR will be in `build/libs/`
 
 `/isorender area <x1> <y1> <z1> <x2> <y2> <z2>`
 
-Opens GUI with:
-- Scale slider
-- Rotation slider  
-- Resolution slider
-- Export PNG button
-
-## Features
-
-- Renders blocks, tile entities (chests, furnaces, etc), and entities
-- Clean implementation using MCP mappings
-- No reflection required
-- Direct Minecraft API access
