@@ -201,8 +201,10 @@ public class RenderScreen extends GuiScreen {
     }
     
     private void scheduleRender() {
+        lastChangeTime = System.currentTimeMillis();
         renderPending = true;
     }
+
     
     private void copyToClipboard() {
         if (renderedImage == null) return;
