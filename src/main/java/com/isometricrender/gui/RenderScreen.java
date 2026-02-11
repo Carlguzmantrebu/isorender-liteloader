@@ -130,6 +130,8 @@ public class RenderScreen extends GuiScreen {
         // Inicializar renderer
         renderer = new WorldRenderer(this.mc.world);
         scheduleRender();
+        renderer.invalidateCache();
+
     }
     
     @Override
@@ -460,7 +462,9 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public boolean doesGuiPauseGame() {
-        return false;
+        renderer.invalidateCache(); // Limpiar memoria
+        cleanup();
+    }
     }
     
     // Clase helper para transferir imagen al clipboard
