@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.nio.IntBuffer;
 import javax.imageio.ImageIO;
 public class RenderScreen extends GuiScreen {
+    private long lastChangeTime = 0;
+    private static final long RENDER_DEBOUNCE_MS = 50; // Reducido a 50ms para respuesta más rápida
+    private boolean isRendering = false;
+
+    
     private final AreaSelection selection;
     private WorldRenderer renderer;
     private BufferedImage renderedImage;
