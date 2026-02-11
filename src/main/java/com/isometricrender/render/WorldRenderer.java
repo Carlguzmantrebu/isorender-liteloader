@@ -42,7 +42,8 @@ public class WorldRenderer {
         this.mc = Minecraft.getMinecraft();
     }
     
-    public BufferedImage render(AreaSelection selection, float scale, float rotation, int resolution) {
+    public BufferedImage render(AreaSelection selection, float scale, float rotation, float slant, int resolution)
+ {
         ensureFBO(resolution);
         
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
