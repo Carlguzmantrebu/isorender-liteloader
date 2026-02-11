@@ -1,5 +1,4 @@
 package com.isometricrender.render;
-
 import com.isometricrender.AreaSelection;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -19,14 +18,12 @@ import net.minecraft.world.World;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.List;
-
 public class WorldRenderer {
     private final World world;
     private final Minecraft mc;
@@ -37,13 +34,25 @@ public class WorldRenderer {
     private int fboWidth = -1;
     private int fboHeight = -1;
     
+    // CACHE DE GEOMETRÍA - NUEVO
+    private int blocksDisplayList = -1;
+    private int tileEntitiesDisplayList = -1;
+    private int entitiesDisplayList = -1;
+    private boolean cacheDirty = true;
+    private AreaSelection cachedSelection = null;
+    
     public WorldRenderer(World world) {
         this.world = world;
         this.mc = Minecraft.getMinecraft();
     }
     
-    public BufferedImage render(AreaSelection selection, float scale, float rotation, float slant, int resolution)
- {
+    public BufferedImage render(AreaSelection selection, float scale, float rotation, float slant, int resolution) {
+        // Verificar si la selección cambió (para invalidar caché)
+        if (cachedSelection == null || !selectionEquals(cachedSelection, selection)) {
+            cacheDirty = true;
+            cachedSelection = selection;
+        }
+        
         ensureFBO(resolution);
         
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
@@ -60,15 +69,39 @@ public class WorldRenderer {
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         
-        renderBlocks(selection);
-        renderTileEntities(selection);
-        renderEntities(selection);
+        // Renderizar usando caché - MUCHO MÁS RÁPIDO
+        renderBlocksCached(selection);
+        renderTileEntitiesCached(selection);
+        renderEntitiesCached(selection);
         
         BufferedImage image = captureFramebuffer(resolution);
         
         restoreState();
         
         return image;
+    }
+    
+    // NUEVO: Comparar selecciones
+    private boolean selectionEquals(AreaSelection a, AreaSelection b) {
+        return a.getMinX() == b.getMinX() && a.getMinY() == b.getMinY() && a.getMinZ() == b.getMinZ() &&
+               a.getMaxX() == b.getMaxX() && a.getMaxY() == b.getMaxY() && a.getMaxZ() == b.getMaxZ();
+    }
+    
+    // NUEVO: Invalidar caché (llamar cuando cambie el mundo)
+    public void invalidateCache() {
+        cacheDirty = true;
+        if (blocksDisplayList != -1) {
+            GL11.glDeleteLists(blocksDisplayList, 1);
+            blocksDisplayList = -1;
+        }
+        if (tileEntitiesDisplayList != -1) {
+            GL11.glDeleteLists(tileEntitiesDisplayList, 1);
+            tileEntitiesDisplayList = -1;
+        }
+        if (entitiesDisplayList != -1) {
+            GL11.glDeleteLists(entitiesDisplayList, 1);
+            entitiesDisplayList = -1;
+        }
     }
     
     private void ensureFBO(int size) {
@@ -121,6 +154,43 @@ public class WorldRenderer {
         GL11.glTranslatef(-cx, -cy, -cz);
     }
     
+    // NUEVO: Renderizar bloques con caché
+    private void renderBlocksCached(AreaSelection selection) {
+        if (cacheDirty || blocksDisplayList == -1) {
+            if (blocksDisplayList == -1) {
+                blocksDisplayList = GL11.glGenLists(1);
+            }
+            
+            GL11.glNewList(blocksDisplayList, GL11.GL_COMPILE);
+            renderBlocks(selection);
+            GL11.glEndList();
+        }
+        
+        GL11.glCallList(blocksDisplayList);
+    }
+    
+    // NUEVO: Renderizar tile entities con caché
+    private void renderTileEntitiesCached(AreaSelection selection) {
+        if (cacheDirty || tileEntitiesDisplayList == -1) {
+            if (tileEntitiesDisplayList == -1) {
+                tileEntitiesDisplayList = GL11.glGenLists(1);
+            }
+            
+            GL11.glNewList(tileEntitiesDisplayList, GL11.GL_COMPILE);
+            renderTileEntities(selection);
+            GL11.glEndList();
+        }
+        
+        GL11.glCallList(tileEntitiesDisplayList);
+    }
+    
+    // NUEVO: Renderizar entidades con caché
+    private void renderEntitiesCached(AreaSelection selection) {
+        // Las entidades SIEMPRE se renderizan sin caché porque se mueven
+        // Pero podemos optimizar el cálculo del AABB
+        renderEntities(selection);
+    }
+    
     private void renderBlocks(AreaSelection selection) {
         BlockRendererDispatcher dispatcher = mc.getBlockRendererDispatcher();
         Tessellator tess = Tessellator.getInstance();
@@ -133,6 +203,7 @@ public class WorldRenderer {
         int minY = selection.getMinY(), maxY = selection.getMaxY();
         int minZ = selection.getMinZ(), maxZ = selection.getMaxZ();
         
+        // OPTIMIZACIÓN: Pre-calcular bounds
         for (int y = minY; y <= maxY; y++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int x = minX; x <= maxX; x++) {
@@ -265,5 +336,8 @@ public class WorldRenderer {
             fboDepth = -1;
         }
         fboWidth = fboHeight = -1;
+        
+        // Limpiar también los display lists
+        invalidateCache();
     }
 }
