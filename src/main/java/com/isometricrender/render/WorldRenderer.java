@@ -49,7 +49,7 @@ public class WorldRenderer {
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
         GL11.glViewport(0, 0, resolution, resolution);
         
-        setupProjection(selection, scale, rotation);
+        setupProjection(selection, scale, rotation, slant);
         GL11.glClearColor(0, 0, 0, 0);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         
@@ -99,7 +99,7 @@ public class WorldRenderer {
             GL30.GL_RENDERBUFFER, fboDepth);
     }
     
-    private void setupProjection(AreaSelection selection, float scale, float rotation) {
+    private void setupProjection(AreaSelection selection, float scale, float rotation, float slant) {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
