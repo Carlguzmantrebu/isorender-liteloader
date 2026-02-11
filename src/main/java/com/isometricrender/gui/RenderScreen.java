@@ -235,6 +235,7 @@ public class RenderScreen extends GuiScreen {
     
     @Override
     public void updateScreen() {
+        // Actualizar campos de texto
         scaleTextField.updateCursorCounter();
         rotationTextField.updateCursorCounter();
         slantTextField.updateCursorCounter();
@@ -245,32 +246,40 @@ public class RenderScreen extends GuiScreen {
         float newRotation = (float) rotationSlider.getSliderValue();
         float newSlant = (float) slantSlider.getSliderValue();
         
+        boolean valueChanged = false;
         if (newScale != scale) {
             scale = newScale;
             scaleTextField.setText(String.format("%.1f", scale));
-            scheduleRender();
+            valueChanged = true;
         }
         if (newRotation != rotation) {
             rotation = newRotation;
             rotationTextField.setText(String.format("%.0f", rotation));
-            scheduleRender();
+            valueChanged = true;
         }
         if (newSlant != slant) {
             slant = newSlant;
             slantTextField.setText(String.format("%.1f", slant));
+            valueChanged = true;
+        }
+        
+        if (valueChanged) {
             scheduleRender();
         }
         
-        // Renderizado
-        if (renderPending) {
+        // Renderizar con debounce más agresivo
+        if (renderPending && !isRendering) {
             long now = System.currentTimeMillis();
-            if (now - lastRenderTime >= RENDER_DELAY_MS) {
+            if (now - lastChangeTime >= RENDER_DEBOUNCE_MS && now - lastRenderTime >= 50) {
+                isRendering = true;
                 updateRender();
-                renderPending = false;
+                isRendering = false;
                 lastRenderTime = now;
+                renderPending = false;
             }
         }
     }
+
     
     private void updateRender() {
         try {
