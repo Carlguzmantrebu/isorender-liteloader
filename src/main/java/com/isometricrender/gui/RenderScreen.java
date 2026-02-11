@@ -1,3 +1,4 @@
+
 package com.isometricrender.gui;
 import com.isometricrender.AreaSelection;
 import com.isometricrender.render.WorldRenderer;
@@ -18,8 +19,8 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.IntBuffer;
 import javax.imageio.ImageIO;
 public class RenderScreen extends GuiScreen {
@@ -41,7 +42,7 @@ public class RenderScreen extends GuiScreen {
     private static final int DEFAULT_RESOLUTION = 1024;
     
     private int previewX, previewY, previewSize;
-    private int panelX, panelWidth = 200;
+    private int panelX, panelWidth = 280;  // AUMENTADO A 280px
     
     private long lastRenderTime = 0;
     private static final long RENDER_DELAY_MS = 100;
@@ -74,52 +75,52 @@ public class RenderScreen extends GuiScreen {
         int currentY = 40;
         
         // Scale: Label [TextField] [Slider]
-        scaleTextField = new GuiTextField(100, this.fontRenderer, panelX + 70, currentY + 15, 40, 14);
+        scaleTextField = new GuiTextField(100, this.fontRenderer, panelX + 70, currentY + 15, 50, 14);
         scaleTextField.setText(String.format("%.1f", scale));
-        scaleSlider = new CustomSlider(0, panelX + 115, currentY + 15, 80, 14, "", "", 0.5, 10.0, scale, false, false);
+        scaleSlider = new CustomSlider(0, panelX + 125, currentY + 15, 145, 14, "", "", 0.5, 10.0, scale, false, false);
         
         currentY += 35;
         
         // Rotation
-        rotationTextField = new GuiTextField(101, this.fontRenderer, panelX + 70, currentY + 15, 40, 14);
+        rotationTextField = new GuiTextField(101, this.fontRenderer, panelX + 70, currentY + 15, 50, 14);
         rotationTextField.setText(String.format("%.0f", rotation));
-        rotationSlider = new CustomSlider(1, panelX + 115, currentY + 15, 80, 14, "", "", 0.0, 360.0, rotation, false, false);
+        rotationSlider = new CustomSlider(1, panelX + 125, currentY + 15, 145, 14, "", "", 0.0, 360.0, rotation, false, false);
         
         currentY += 35;
         
         // Slant
-        slantTextField = new GuiTextField(102, this.fontRenderer, panelX + 70, currentY + 15, 40, 14);
+        slantTextField = new GuiTextField(102, this.fontRenderer, panelX + 70, currentY + 15, 50, 14);
         slantTextField.setText(String.format("%.1f", slant));
-        slantSlider = new CustomSlider(2, panelX + 115, currentY + 15, 80, 14, "", "", 0.0, 90.0, slant, false, false);
+        slantSlider = new CustomSlider(2, panelX + 125, currentY + 15, 145, 14, "", "", 0.0, 90.0, slant, false, false);
         
         currentY += 50;
         
         // Sección Presets
-        this.buttonList.add(new GuiButton(10, panelX + 10, currentY, 85, 18, "Dimetric"));
-        this.buttonList.add(new GuiButton(11, panelX + 105, currentY, 85, 18, "Isometric"));
+        this.buttonList.add(new GuiButton(10, panelX + 10, currentY, 130, 18, "Dimetric"));
+        this.buttonList.add(new GuiButton(11, panelX + 145, currentY, 130, 18, "Isometric"));
         
         currentY += 25;
-        this.buttonList.add(new GuiButton(12, panelX + 10, currentY, 180, 18, "Reset View"));
+        this.buttonList.add(new GuiButton(12, panelX + 10, currentY, 265, 18, "Reset View"));
         
         currentY += 45;
         
         // Sección Export
-        this.buttonList.add(new GuiButton(20, panelX + 10, currentY, 56, 18, "1024"));
-        this.buttonList.add(new GuiButton(21, panelX + 72, currentY, 56, 18, "2048"));
-        this.buttonList.add(new GuiButton(22, panelX + 134, currentY, 56, 18, "4096"));
+        this.buttonList.add(new GuiButton(20, panelX + 10, currentY, 85, 18, "1024"));
+        this.buttonList.add(new GuiButton(21, panelX + 100, currentY, 85, 18, "2048"));
+        this.buttonList.add(new GuiButton(22, panelX + 190, currentY, 85, 18, "4096"));
         
         currentY += 28;
         
         // Custom resolution
-        customResTextField = new GuiTextField(103, this.fontRenderer, panelX + 70, currentY, 50, 14);
+        customResTextField = new GuiTextField(103, this.fontRenderer, panelX + 70, currentY, 60, 14);
         customResTextField.setText(String.valueOf(resolution));
-        this.buttonList.add(new GuiButton(23, panelX + 125, currentY - 2, 65, 18, "Export"));
+        this.buttonList.add(new GuiButton(23, panelX + 135, currentY - 2, 140, 18, "Export"));
         
         currentY += 28;
-        this.buttonList.add(new GuiButton(24, panelX + 10, currentY, 180, 18, "Copy to Clipboard"));
+        this.buttonList.add(new GuiButton(24, panelX + 10, currentY, 265, 18, "Copy to Clipboard"));
         
         currentY += 35;
-        this.buttonList.add(new GuiButton(25, panelX + 10, currentY, 180, 20, "Close"));
+        this.buttonList.add(new GuiButton(25, panelX + 10, currentY, 265, 20, "Close"));
         
         // Inicializar renderer
         renderer = new WorldRenderer(this.mc.world);
@@ -353,7 +354,7 @@ public class RenderScreen extends GuiScreen {
         String title = "ISOMETRIC RENDER";
         this.drawCenteredString(this.fontRenderer, "\u00A7e\u00A7l" + title, this.width / 2, 15, 0xFFFFFF);
         
-        // Panel lateral negro
+        // Panel lateral negro (ahora más ancho)
         drawRect(panelX, 35, panelX + panelWidth, this.height - 10, 0xDD000000);
         drawRect(panelX, 35, panelX + 1, this.height - 10, 0xFF555555);
         
